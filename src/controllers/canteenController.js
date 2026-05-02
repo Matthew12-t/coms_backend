@@ -4,8 +4,7 @@ const getAllCanteens = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('canteens')
-      .select('*')
-      .eq('is_active', true);
+      .select('*');
 
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json({ data });

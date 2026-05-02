@@ -1,5 +1,4 @@
 const supabase = require('../config/supabase');
-const { triggerNotificationsForCanteen } = require('../services/notificationService');
 
 const ingestPrediction = async (req, res) => {
   try {
@@ -11,13 +10,9 @@ const ingestPrediction = async (req, res) => {
       .select()
       .single();
 
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
+    if (error) return res.status(500).json({ error: error.message });
 
-    const triggered = await triggerNotificationsForCanteen(canteen_id, head_count);
-
-    return res.status(201).json({ data, triggered_count: triggered.length });
+    return res.status(201).json({ data });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }

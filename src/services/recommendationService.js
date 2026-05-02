@@ -1,44 +1,48 @@
 const supabase = require('../config/supabase');
-const { haversineDistanceKm } = require('../utils/distance');
 const { occupancyRatio } = require('../utils/density');
 
-const DENSITY_WEIGHT = 0.7;
-const DISTANCE_WEIGHT = 0.3;
-const MAX_DISTANCE_KM = 2;
+const resolveLatestOccupancy = (logs) => {
+  const map = new Map();
+  for (const row of logs) {
+    if (!map.has(row.canteen_id)) map.set(row.canteen_id, row);
+  }
+  return map;
+};
 
-const buildBestChoice = async ({ latitude, longitude } = {}) => {
+const resolveDensityLevel = (ratio) => {
+  if (ratio < 0.2) return 'low';
+  if (ratio < 0.5) return 'moderate';
+  return 'peak';
+};
+
+const buildBestChoice = async () => {
   const { data: canteens, error: canteenErr } = await supabase
     .from('canteens')
     .select('*')
-    .eq('is_active', true);
+    .eq('is_open', true);
   if (canteenErr) throw new Error(canteenErr.message);
 
-  const { data: latest, error: latestErr } = await supabase
-    .from('canteen_latest_occupancy')
-    .select('*');
-  if (latestErr) throw new Error(latestErr.message);
+  const { data: logs, error: logsErr } = await supabase
+    .from('occupancy_logs')
+    .select('canteen_id, head_count, created_at')
+    .order('created_at', { ascending: false });
+  if (logsErr) throw new Error(logsErr.message);
 
-  const latestMap = new Map(latest.map((row) => [row.canteen_id, row]));
+  const latestMap = resolveLatestOccupancy(logs);
 
-  const scored = canteens.map((c) => {
-    const occ = latestMap.get(c.id);
-    const headCount = occ?.head_count ?? 0;
-    const ratio = occupancyRatio(headCount, c.capacity);
-    const distanceKm = haversineDistanceKm(latitude, longitude, c.latitude, c.longitude);
-    const normalizedDistance =
-      distanceKm == null ? 0 : Math.min(1, distanceKm / MAX_DISTANCE_KM);
-    const score = ratio * DENSITY_WEIGHT + normalizedDistance * DISTANCE_WEIGHT;
-    return {
-      ...c,
-      head_count: headCount,
-      density_level: occ?.density_level ?? 'unknown',
-      distance_km: distanceKm,
-      score,
-    };
-  });
-
-  scored.sort((a, b) => a.score - b.score);
-  return scored;
+  return canteens
+    .map((c) => {
+      const occ = latestMap.get(c.id);
+      const headCount = occ?.head_count ?? 0;
+      const ratio = occupancyRatio(headCount, c.capacity_max);
+      return {
+        ...c,
+        head_count: headCount,
+        density_level: resolveDensityLevel(ratio),
+        score: ratio,
+      };
+    })
+    .sort((a, b) => a.score - b.score);
 };
 
 module.exports = { buildBestChoice };

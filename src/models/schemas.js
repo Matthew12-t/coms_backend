@@ -8,15 +8,8 @@ const occupancySchema = {
   head_count: { required: true, type: 'number', min: 0 },
 };
 
-const notificationSchema = {
-  canteen_id: { required: true, type: 'string' },
-  threshold: { required: true, type: 'number', min: 0 },
-};
-
 const preferencesSchema = {
   favorite_canteen_ids: { type: 'array' },
-  notify_on_low_density: { type: 'boolean' },
-  push_token: { type: 'string' },
 };
 
 const menuSchema = {
@@ -30,11 +23,17 @@ const authSchema = {
   password: { required: true, type: 'string' },
 };
 
+const profileSchema = {
+  full_name: { type: 'string' },
+  student_id: { type: 'string' },
+  major: { type: 'string' },
+};
+
 module.exports = {
   predictionSchema,
   occupancySchema,
-  notificationSchema,
   preferencesSchema,
   menuSchema,
   authSchema,
+  profileSchema,
 };
