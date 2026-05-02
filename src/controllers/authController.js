@@ -7,11 +7,12 @@ const resolveEmailRedirect = () =>
 
 const register = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, redirectTo } = req.body;
+    const emailRedirectTo = redirectTo || resolveEmailRedirect();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: resolveEmailRedirect() },
+      options: { emailRedirectTo },
     });
     if (error) return res.status(400).json({ error: error.message });
     return res.status(201).json({ data });
