@@ -2,6 +2,8 @@ require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger');
 
 const canteenRoutes = require('./routes/canteenRoutes');
 const occupancyRoutes = require('./routes/occupancyRoutes');
@@ -18,6 +20,8 @@ const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok' });
